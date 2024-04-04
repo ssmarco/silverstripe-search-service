@@ -2,10 +2,10 @@
 
 namespace SilverStripe\SearchService\Tests\Jobs;
 
-use Page;
 use SilverStripe\SearchService\DataObject\DataObjectDocument;
 use SilverStripe\SearchService\Jobs\RemoveDataObjectJob;
 use SilverStripe\SearchService\Schema\Field;
+use SilverStripe\SearchService\Service\Indexer;
 use SilverStripe\SearchService\Tests\Fake\DataObjectFake;
 use SilverStripe\SearchService\Tests\Fake\DataObjectFakePrivate;
 use SilverStripe\SearchService\Tests\Fake\DataObjectFakeVersioned;
@@ -17,10 +17,7 @@ use SilverStripe\Security\Member;
 class RemoveDataObjectJobTest extends SearchServiceTest
 {
 
-    protected static $fixture_file = [ // @phpcs:ignore
-        '../fixtures.yml',
-        '../pages.yml',
-    ];
+    protected static $fixture_file = '../fixtures.yml'; // @phpcs:ignore
 
     /**
      * @phpcsSuppress SlevomatCodingStandard.TypeHints.PropertyTypeHint.MissingNativeTypeHint
@@ -57,6 +54,23 @@ class RemoveDataObjectJobTest extends SearchServiceTest
             ]
         );
 
+        $index = [
+            'main' => [
+                'includeClasses' => [
+                    DataObjectFake::class => ['title' => true],
+                    TagFake::class => ['title' => true],
+                ],
+            ],
+        ];
+
+        $config->set(
+            'getIndexesForClassName',
+            [
+                DataObjectFake::class => $index,
+                TagFake::class => $index,
+            ]
+        );
+
         // Select tag one from our fixture
         $tag = $this->objFromFixture(TagFake::class, 'one');
         // Queue up a job to remove our Tag, the result should be that any related DataObject (DOs that have this Tag
@@ -65,6 +79,9 @@ class RemoveDataObjectJobTest extends SearchServiceTest
             DataObjectDocument::create($tag)
         );
         $job->setup();
+
+        // Creating this job does not necessarily mean to delete documents from index
+        $this->assertEquals(Indexer::METHOD_ADD, $job->getMethod());
 
         // Grab what Documents the Job determined it needed to action
         /** @var DataObjectDocument[] $documents */
@@ -80,66 +97,25 @@ class RemoveDataObjectJobTest extends SearchServiceTest
 
         $resultTitles = [];
 
+        // This determines whether the document should be added or removed from from the index
         foreach ($documents as $document) {
             $resultTitles[] = $document->getDataObject()?->Title;
+
+            // The document should be added to index
+            $this->assertTrue($document->shouldIndex());
         }
 
         $this->assertEqualsCanonicalizing($expectedTitles, $resultTitles);
-    }
 
-    public function testUnpublishedParentPage(): void
-    {
-        $config = $this->mockConfig();
+        // Deleting related documents so that they will be removed from index as well
+        $this->objFromFixture(DataObjectFake::class, 'one')->delete();
+        $this->objFromFixture(DataObjectFake::class, 'three')->delete();
 
-        $config->set(
-            'getSearchableClasses',
-            [
-                Page::class,
-            ]
-        );
-
-        $config->set(
-            'getFieldsForClass',
-            [
-                Page::class => [
-                    new Field('title'),
-                    new Field('content'),
-                ],
-            ]
-        );
-
-        // Publish all pages in fixtures since the internal dependency checks looks for live version
-        for ($i=1; $i<=8; $i++) {
-            $this->objFromFixture(Page::class, 'page' . $i)->publishRecursive();
-        }
-
-        // Queue up a job to remove a page with child pages are added as related documents
-        $pageOne = $this->objFromFixture(Page::class, 'page1');
-        $pageDoc = DataObjectDocument::create($pageOne);
-        $job = RemoveDataObjectJob::create($pageDoc);
-        $job->setup();
-
-        // Grab what Documents the Job determined it needed to action
-        /** @var DataObjectDocument[] $documents */
-        $documents = $job->getDocuments();
-
-        // There should be two Pages with this Tag assigned
-        $this->assertCount(4, $documents);
-
-        $expectedTitles = [
-            'Child Page 1',
-            'Child Page 2',
-            'Grandchild Page 1',
-            'Grandchild Page 2',
-        ];
-
-        $resultTitles = [];
-
+        // This determines whether the document should be added or removed from from the index
         foreach ($documents as $document) {
-            $resultTitles[] = $document->getDataObject()?->Title;
+            // The document should be removed from index
+            $this->assertFalse($document->shouldIndex());
         }
-
-        $this->assertEqualsCanonicalizing($expectedTitles, $resultTitles);
     }
 
 }

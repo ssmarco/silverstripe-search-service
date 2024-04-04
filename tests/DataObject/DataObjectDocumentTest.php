@@ -17,6 +17,7 @@ use SilverStripe\SearchService\Tests\Fake\DataObjectFakePrivate;
 use SilverStripe\SearchService\Tests\Fake\DataObjectFakeVersioned;
 use SilverStripe\SearchService\Tests\Fake\DataObjectSubclassFake;
 use SilverStripe\SearchService\Tests\Fake\ImageFake;
+use SilverStripe\SearchService\Tests\Fake\PageFake;
 use SilverStripe\SearchService\Tests\Fake\TagFake;
 use SilverStripe\SearchService\Tests\SearchServiceTest;
 use SilverStripe\Security\Member;
@@ -45,6 +46,7 @@ class DataObjectDocumentTest extends SearchServiceTest
         DataObjectSubclassFake::class,
         DataObjectFakeVersioned::class,
         DataObjectFakePrivate::class,
+        PageFake::class,
     ];
 
     public function testGetIdentifier(): void

@@ -372,6 +372,10 @@ class DataObjectDocument implements
     }
 
     /**
+     * Collects related documents based on the underlying relationship of their DataObjects.
+     * These data are typically joined by $has_many or $many_many configured on searcheable classes
+     * defined by their fields to be indexed. Other relationships are considered a rare case.
+     *
      * @return DocumentInterface[]
      */
     public function getDependentDocuments(): array
