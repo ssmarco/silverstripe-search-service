@@ -372,10 +372,12 @@ class DataObjectDocument implements
     }
 
     /**
-     * Collects related documents based on the underlying relationship of their DataObjects.
-     * These data are typically joined by $has_many or $many_many configured on searcheable classes
-     * defined by their fields to be indexed. Other relationships are considered a rare case.
+     * Collects documents that depend on the current DataObject for indexing.
+     * It will inspect the search index configuration for anything using this object in a field or, if the
+     * current object is an instance of SiteTree, it will respect `enforce_strict_hierarchy`
+     * and add any child objects.
      *
+     * @see [the dependency tracking docs](docs/en/usage.md#dependency-tracking)
      * @return DocumentInterface[]
      */
     public function getDependentDocuments(): array
