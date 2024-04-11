@@ -3,7 +3,6 @@
 namespace SilverStripe\SearchService\Tests\DataObject;
 
 use Page;
-use SilverStripe\ORM\ArrayList;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\ORM\FieldType\DBDatetime;
 use SilverStripe\ORM\RelationList;
@@ -660,4 +659,5 @@ class DataObjectDocumentTest extends SearchServiceTest
 
         unserialize(serialize($doc));
     }
+
 }
