@@ -17,7 +17,7 @@ use SilverStripe\Security\Member;
 class RemoveDataObjectJobTest extends SearchServiceTest
 {
 
-    protected static $fixture_file = '../fixtures.yml'; // @phpcs:ignore
+    protected static $fixture_file = '../fixtures.yml'; // phpcs:ignore
 
     /**
      * @phpcsSuppress SlevomatCodingStandard.TypeHints.PropertyTypeHint.MissingNativeTypeHint
