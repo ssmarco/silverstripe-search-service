@@ -2,7 +2,6 @@
 
 namespace SilverStripe\SearchService\Tests\Fake;
 
-use SilverStripe\ORM\DataObject;
 use SilverStripe\SearchService\Interfaces\DependencyTracker;
 use SilverStripe\SearchService\Interfaces\DocumentInterface;
 
@@ -54,11 +53,6 @@ class DocumentFake implements DocumentInterface, DependencyTracker
     public function getDependentDocuments(): array
     {
         return $this->dependentDocuments;
-    }
-
-    public function getDataObject(): ?DataObject
-    {
-        return null;
     }
 
 }

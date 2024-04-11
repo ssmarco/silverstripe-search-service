@@ -6,6 +6,7 @@ use InvalidArgumentException;
 use SilverStripe\Core\Config\Configurable;
 use SilverStripe\Core\Injector\Injectable;
 use SilverStripe\ORM\DataObject;
+use SilverStripe\SearchService\Interfaces\DataObjectDocumentInterface;
 use SilverStripe\SearchService\Interfaces\DependencyTracker;
 use SilverStripe\SearchService\Interfaces\DocumentAddHandler;
 use SilverStripe\SearchService\Interfaces\DocumentInterface;
@@ -79,18 +80,15 @@ class Indexer
                         $document->onAddToSearchIndexes(DocumentAddHandler::BEFORE_ADD);
                     }
 
-                    // Making sure we get the Live version of the DataObject before indexing the document
-                    Versioned::withVersionedMode(static function () use ($document): void {
-                        Versioned::set_stage(Versioned::LIVE);
-                        $dataObject = $document->getDataObject();
-
-                        if (!$dataObject) {
-                            return;
-                        }
-
-                        $liveDataObject = DataObject::get($dataObject->ClassName)->byID($dataObject->ID);
-                        $document->setDataObject($liveDataObject);
-                    });
+                    if ($document instanceof DataObjectDocumentInterface) {
+                        // Making sure we get the Live version of the DataObject before indexing the document
+                        Versioned::withVersionedMode(static function () use ($document): void {
+                            Versioned::set_stage(Versioned::LIVE);
+                            $dataObject = $document->getDataObject();
+                            $liveDataObject = DataObject::get($dataObject->ClassName)->byID($dataObject->ID);
+                            $document->setDataObject($liveDataObject);
+                        });
+                    }
 
                     $toUpdate[] = $document;
                 } else {
