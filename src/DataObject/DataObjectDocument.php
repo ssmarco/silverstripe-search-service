@@ -5,7 +5,6 @@ namespace SilverStripe\SearchService\DataObject;
 use Exception;
 use InvalidArgumentException;
 use LogicException;
-use SilverStripe\CMS\Model\SiteTree;
 use SilverStripe\Core\Config\Configurable;
 use SilverStripe\Core\Extensible;
 use SilverStripe\Core\Injector\Injectable;
@@ -447,7 +446,7 @@ class DataObjectDocument implements
 
                     /** @var DataObjectDocument $candidateDocument */
                     foreach ($chunker->chunk() as $candidateDocument) {
-                        $relatedObj = $candidateDocument->getFieldValue($field);
+                        $relatedObj = $candidateDocument->getFieldDependency($field);
 
                         // Singleton returned a dataobject, but this record did not. Rare, but possible.
                         if (!$relatedObj instanceof $objectClass) {
@@ -455,15 +454,11 @@ class DataObjectDocument implements
                         }
 
                         if ($relatedObj->ID === $ownedDataObject->ID) {
-                            $docs[$document->getIdentifier()] = $document;
+                            $docs[$candidateDocument->getIdentifier()] = $candidateDocument;
                         }
                     }
                 }
             }
-        }
-
-        if ($ownedDataObject instanceof SiteTree && SiteTree::config()->get('enforce_strict_hierarchy')) {
-            $docs = array_merge($docs, $this->getChildDocuments($ownedDataObject));
         }
 
         $dependentDocs = array_values($docs);
@@ -645,19 +640,6 @@ class DataObjectDocument implements
         if ($event === DocumentRemoveHandler::AFTER_REMOVE) {
             $this->markIndexed(true);
         }
-    }
-
-    public function getChildDocuments(SiteTree $page): array
-    {
-        $docs = [];
-
-        foreach ($page->AllChildren() as $record) {
-            $document = DataObjectDocument::create($record);
-            $docs[$document->getIdentifier()] = $document;
-            $docs = array_merge($docs, $document->getDependentDocuments());
-        }
-
-        return $docs;
     }
 
 }

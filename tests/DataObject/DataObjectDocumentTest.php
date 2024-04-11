@@ -3,7 +3,6 @@
 namespace SilverStripe\SearchService\Tests\DataObject;
 
 use Page;
-use SilverStripe\ORM\ArrayList;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\ORM\FieldType\DBDatetime;
 use SilverStripe\ORM\RelationList;
@@ -647,7 +646,7 @@ class DataObjectDocumentTest extends SearchServiceTest
         $id = $dataObject->ID;
 
         $doc = DataObjectDocument::create($dataObject)->setShouldFallbackToLatestVersion(true);
-        $dataObject->delete();
+        $dataObject->doArchive();
 
         /** @var DataObjectDocument $serialDoc */
         $serialDoc = unserialize(serialize($doc));
@@ -659,30 +658,6 @@ class DataObjectDocumentTest extends SearchServiceTest
         );
 
         unserialize(serialize($doc));
-    }
-
-    public function testGetChildDocuments(): void
-    {
-        $pageOne = $this->objFromFixture(Page::class, 'page1');
-        $pageTwo = $this->objFromFixture(Page::class, 'page2');
-        $pageThree = $this->objFromFixture(Page::class, 'page3');
-        $pageSeven = $this->objFromFixture(Page::class, 'page7');
-        $pageEight = $this->objFromFixture(Page::class, 'page8');
-
-        $parentDocument = DataObjectDocument::create($pageOne);
-        $identifierPrefix = preg_replace('/\d$/', '', $parentDocument->getIdentifier());
-        $childDocs = $parentDocument->getChildDocuments($pageOne);
-
-        $expectedIdentifiers = [
-            $identifierPrefix . $pageTwo->ID,
-            $identifierPrefix . $pageThree->ID,
-            $identifierPrefix . $pageSeven->ID,
-            $identifierPrefix . $pageEight->ID,
-        ];
-
-        $resultIdentifiers = ArrayList::create($childDocs)->column('getIdentifier');
-
-        $this->assertEqualsCanonicalizing($expectedIdentifiers, $resultIdentifiers);
     }
 
 }

@@ -82,11 +82,8 @@ class RemoveDataObjectJob extends IndexJob
                     // Taking into account that this queued job has a reference of existing child pages
                     // We need to make sure that we are able to send these pages to ElasticSearch etc. for removal
                     $oldRecord = $doc->getDataObject();
-
-                    if ($oldRecord->isArchived() || $oldRecord->isOnDraft()) {
-                        $document = DataObjectDocument::create($oldRecord);
-                        $carry[$document->getIdentifier()] = $document;
-                    }
+                    $document = DataObjectDocument::create($oldRecord);
+                    $carry[$document->getIdentifier()] = $document;
 
                     return $carry;
                 },
