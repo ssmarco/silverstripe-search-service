@@ -16,6 +16,7 @@ use SilverStripe\SearchService\Tests\Fake\DataObjectFakePrivate;
 use SilverStripe\SearchService\Tests\Fake\DataObjectFakeVersioned;
 use SilverStripe\SearchService\Tests\Fake\DataObjectSubclassFake;
 use SilverStripe\SearchService\Tests\Fake\ImageFake;
+use SilverStripe\SearchService\Tests\Fake\PageFake;
 use SilverStripe\SearchService\Tests\Fake\TagFake;
 use SilverStripe\SearchService\Tests\SearchServiceTest;
 use SilverStripe\Security\Member;
@@ -44,6 +45,7 @@ class DataObjectDocumentTest extends SearchServiceTest
         DataObjectSubclassFake::class,
         DataObjectFakeVersioned::class,
         DataObjectFakePrivate::class,
+        PageFake::class,
     ];
 
     public function testGetIdentifier(): void
@@ -531,6 +533,7 @@ class DataObjectDocumentTest extends SearchServiceTest
         $config->set('getSearchableClasses', [
             DataObjectFake::class,
             ImageFake::class,
+            Page::class,
         ]);
         $config->set('getFieldsForClass', [
             DataObjectFake::class => [
@@ -542,6 +545,10 @@ class DataObjectDocumentTest extends SearchServiceTest
             ],
             ImageFake::class => [
                 new Field('tagtitles', 'Tags.Title'),
+            ],
+            Page::class => [
+                new Field('title'),
+                new Field('content'),
             ],
         ]);
 
@@ -576,6 +583,33 @@ class DataObjectDocumentTest extends SearchServiceTest
         }
 
         $this->assertEqualsCanonicalizing($expectedDocuments, $resultDocuments);
+
+        $pageOne = $this->objFromFixture(Page::class, 'page1');
+        $pageDoc = DataObjectDocument::create($pageOne);
+        /** @var DataObjectDocument[] $dependentPages */
+        $dependentPages = $pageDoc->getDependentDocuments();
+
+        // Grab all the expected pages
+        $pageTwo = $this->objFromFixture(Page::class, 'page2');
+        $pageThree = $this->objFromFixture(Page::class, 'page3');
+        $pageSeven = $this->objFromFixture(Page::class, 'page7');
+        $pageEight = $this->objFromFixture(Page::class, 'page8');
+
+        $expectedPages = [
+            sprintf('%s-%s', Page::class, $pageTwo->ID),
+            sprintf('%s-%s', Page::class, $pageThree->ID),
+            sprintf('%s-%s', Page::class, $pageSeven->ID),
+            sprintf('%s-%s', Page::class, $pageEight->ID),
+        ];
+
+        $resultPages = [];
+
+        // Now let's check that each Document represents the Pages that we expected
+        foreach ($dependentPages as $document) {
+            $resultPages[] = sprintf('%s-%s', $document->getSourceClass(), $document->getDataObject()?->ID);
+        }
+
+        $this->assertEqualsCanonicalizing($expectedPages, $resultPages);
     }
 
     public function testExtensionRequired(): void
@@ -612,7 +646,7 @@ class DataObjectDocumentTest extends SearchServiceTest
         $id = $dataObject->ID;
 
         $doc = DataObjectDocument::create($dataObject)->setShouldFallbackToLatestVersion(true);
-        $dataObject->delete();
+        $dataObject->doArchive();
 
         /** @var DataObjectDocument $serialDoc */
         $serialDoc = unserialize(serialize($doc));

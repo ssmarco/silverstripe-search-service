@@ -371,6 +371,12 @@ class DataObjectDocument implements
     }
 
     /**
+     * Collects documents that depend on the current DataObject for indexing.
+     * It will inspect the search index configuration for anything using this object in a field or, if the
+     * current object is an instance of SiteTree, it will respect `enforce_strict_hierarchy`
+     * and add any child objects.
+     *
+     * @see [the dependency tracking docs](docs/en/usage.md#dependency-tracking)
      * @return DocumentInterface[]
      */
     public function getDependentDocuments(): array
@@ -440,7 +446,7 @@ class DataObjectDocument implements
 
                     /** @var DataObjectDocument $candidateDocument */
                     foreach ($chunker->chunk() as $candidateDocument) {
-                        $relatedObj = $candidateDocument->getFieldValue($field);
+                        $relatedObj = $candidateDocument->getFieldDependency($field);
 
                         // Singleton returned a dataobject, but this record did not. Rare, but possible.
                         if (!$relatedObj instanceof $objectClass) {
@@ -448,7 +454,7 @@ class DataObjectDocument implements
                         }
 
                         if ($relatedObj->ID === $ownedDataObject->ID) {
-                            $docs[$document->getIdentifier()] = $document;
+                            $docs[$candidateDocument->getIdentifier()] = $candidateDocument;
                         }
                     }
                 }
